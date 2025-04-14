@@ -191,3 +191,62 @@ def important_metrics(df, single_cache, weekly_cache, path):
                 ])
             ])
         ], fluid=True)
+    
+    elif path == 'control':
+        components = ["Team Labor", "Team Labor OT", "Shift Supervisors", 
+                      "Shift Supervisors OT", "Assistant Managers", 
+                      "Assistant Managers OT", "Restaurant General Managers", 
+                      "PTO", "Store Training"]
+
+        return dbc.Container([
+            html.H4("Cost of Sales", className="mt-4 mb-4 text-primary", style={'textAlign': 'center'}),
+
+            # Stacked Bar
+            dbc.Row([
+                dbc.Col(dcc.Graph(
+                    figure=plot_stacked_bar(df, components, 'Controllable Store Level Payroll Breakdown', ''),
+                    config={"responsive": True},
+                    style={'height': '450px'}
+                ))
+            ]),
+
+            # Comparison by Period
+            dbc.Row([
+                dbc.Col(dcc.Graph(
+                    figure=plot_comparison_by_period_from_cache(single_cache, 'Controllable Store Level Payroll', 'Controllable Store Level Payroll ($)'),
+                    config={"responsive": True},
+                    style={'height': '450px'}
+                ))
+            ]),
+
+            # Percentage Plot
+            dbc.Row([
+                dbc.Col(dcc.Graph(
+                    figure=percentage_plot(df, 'Controllable Store Level Payroll', 'Controllable Store Level Payroll (%)'),
+                    config={"responsive": True},
+                    style={'height': '450px'}
+                ))
+            ]),
+
+            # Dropdown and Top 5 Table
+            dbc.Row([
+                dbc.Col([
+                    html.H5("Top 5 Stores by Selected Cost Component"),
+                    dcc.Dropdown(
+                        id='control-component-dropdown',
+                        options=[{'label': comp, 'value': comp} for comp in components],
+                        value=components[0],
+                        clearable=False,
+                        style={'width': '300px', 'marginBottom': '20px'}
+                    ),
+                    dash_table.DataTable(
+                        id='top5-control-table',
+                        columns=[],  # will be filled by callback
+                        data=[],
+                        style_table={'overflowX': 'auto'},
+                        style_cell={'textAlign': 'center'},
+                        style_header={'backgroundColor': '#f2f2f2', 'fontWeight': 'bold'}
+                    )
+                ])
+            ])
+        ], fluid=True)

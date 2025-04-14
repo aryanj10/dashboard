@@ -3,27 +3,20 @@ from dash import Dash, dcc, html, Input, Output
 import pandas as pd
 import numpy as np
 import json
-from tqdm import tqdm
 import plotly.graph_objects as go
 import dash
 import dash_core_components as dcc
 import plotly.express as px
-import matplotlib.pyplot as plt
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 import io
 from dash.exceptions import PreventUpdate
 import base64
-from plotly.subplots import make_subplots
 import re
 import dash_table
 from dash.dash_table.Format import Format, Group, Scheme
-from scipy.stats import zscore
 import dash_bootstrap_components as dbc
-from dashboard_utils import ( plot_comparison_by_period,plot_comparison_by_period_multi,
-     percentage_plot, percentage_plot_multi, convert_to_weekly,aum_rgm, return_table, extract_data_zscore,
-    extract_data_zscore_store,get_cell_style, update_period_comparison_graph
-)
-from common_util import calculate_totals_per_period, extract_all_line_items, preprocess_comparison_data, convert_to_weekly
+
+from common_util import (calculate_totals_per_period, extract_all_line_items,
+                        preprocess_comparison_data, convert_to_weekly, tables_page)
 
 from views_code import KPISection, MainChart, AreaSelector, StoreSelector, Header
 
@@ -141,6 +134,7 @@ app.layout = html.Div([
         dcc.Link("Summary View", href="/", style={"display": "block", "margin-bottom": "10px"}),
         dcc.Link("Revenue", href="/revenue-graphs", style={"display": "block", "margin-bottom": "10px"}),
         dcc.Link("Cost of Sales", href="/cost-graphs", style={"display": "block", "margin-bottom": "10px"}),
+        dcc.Link("Controllable Store Level Payroll", href="/control-graphs", style={"display": "block", "margin-bottom": "10px"}),
         html.Hr(),
 
         html.H5("Filters"),
@@ -265,8 +259,19 @@ def render_page_content(pathname):
             html.Div(id='current-selections'),
             html.Div(id='cost-graphs-container')  # ⬅️ where we'll render the period graphs
         ])
+    elif pathname == "/control-graphs":
+        return html.Div([
+            html.Div(id="resize-trigger", style={"display": "none"}),
+            html.Script("window.addEventListener('load', () => { window.dispatchEvent(new Event('resize')); });"),
+            Header(),
+            html.Div(id='current-selections'),
+            html.Div(id='control-graphs-container')  # ⬅️ where we'll render the period graphs
+        ])
     else:
         return html.H1("404 - Page not found", style={"textAlign": "center"})
+
+
+
 @app.callback(
     Output('revenue-graphs-container', 'children'),
     [
@@ -334,6 +339,40 @@ def update_cost_graphs(period, region, area_coach, store):
     return important_metrics(df, single_cache, weekly_cache, 'cost')
 
 @app.callback(
+    Output('control-graphs-container', 'children'),
+    [
+        Input('period-dropdown', 'value'),
+        Input('region-dropdown', 'value'),
+        Input('area-coach-dropdown', 'value'),
+        Input('store-dropdown', 'value')
+    ]
+)
+def update_control_graphs(period, region, area_coach, store):
+    if not period:
+        raise PreventUpdate
+
+    if not region and not area_coach and not store:
+        data = all_store_data
+        totals = calculate_totals_per_period(data, 'All', 'All')
+    elif store:
+        data = all_store_data_region[region][area_coach][store]
+        totals = calculate_totals_per_period(data, 'Store', 'All')
+    elif area_coach:
+        data = all_store_data_region[region][area_coach]
+        totals = calculate_totals_per_period(data, 'All', 'All')
+    else:
+        data = all_store_data_region[region]
+        totals = calculate_totals_per_period(data, 'Region', 'All')
+
+    df = pd.DataFrame.from_dict(totals, orient='index')
+    df['Period'] = df.index
+    single_cache = preprocess_comparison_data(totals)
+    weekly_cache = preprocess_comparison_data(convert_to_weekly(totals))
+
+    return important_metrics(df, single_cache, weekly_cache, 'control')
+
+
+@app.callback(
     [Output("sidebar", "style"),
      Output("page-content", "style")],
     [Input("sidebar-toggle", "n_clicks")]
@@ -377,13 +416,9 @@ def update_top5_cost_table(component, period, region, area_coach, store):
 
     store_data = extract_all_line_items(data, period, data_type=data_type)
     df = pd.DataFrame.from_dict(store_data, orient='index')
-    df = df[[component, 'Net Revenue']].dropna()
-    df = df[df['Net Revenue'] > 0]
-    df['% of Revenue'] = (df[component] / df['Net Revenue']) * 100
-    df = df.sort_values(by=component, ascending=False).head(5).reset_index().rename(columns={'index': 'Store'})
+    
 
-    columns = [{'name': col, 'id': col} for col in df.columns]
-    return df.to_dict('records'), columns
+    return tables_page(df, component)
 
 
 @app.callback(
@@ -417,13 +452,44 @@ def update_top5_cost_table(component, period, region, area_coach, store):
 
     store_data = extract_all_line_items(data, period, data_type=data_type)
     df = pd.DataFrame.from_dict(store_data, orient='index')
-    df = df[[component, 'Net Revenue']].dropna()
-    df = df[df['Net Revenue'] > 0]
-    df['% of Revenue'] = (df[component] / df['Net Revenue']) * 100
-    df = df.sort_values(by=component, ascending=False).head(5).reset_index().rename(columns={'index': 'Store'})
+    
 
-    columns = [{'name': col, 'id': col} for col in df.columns]
-    return df.to_dict('records'), columns
+    return tables_page(df, component)
+
+@app.callback(
+    Output('top5-control-table', 'data'),
+    Output('top5-control-table', 'columns'),
+    [
+        Input('control-component-dropdown', 'value'),
+        Input('period-dropdown', 'value'),
+        Input('region-dropdown', 'value'),
+        Input('area-coach-dropdown', 'value'),
+        Input('store-dropdown', 'value')
+    ]
+)
+def update_top5_cost_table(component, period, region, area_coach, store):
+    if not component or not period:
+        raise PreventUpdate
+
+    # Scope the data
+    if not region and not area_coach and not store:
+        data = all_store_data
+        data_type = 'All'
+    elif store:
+        data = all_store_data_region[region][area_coach][store]
+        data_type = 'Store'
+    elif area_coach:
+        data = all_store_data_region[region][area_coach]
+        data_type = 'All'
+    else:
+        data = all_store_data_region[region]
+        data_type = 'Region'
+
+    store_data = extract_all_line_items(data, period, data_type=data_type)
+    df = pd.DataFrame.from_dict(store_data, orient='index')
+    
+
+    return tables_page(df, component)
 
 
 app.clientside_callback(
