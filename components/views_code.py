@@ -3,7 +3,6 @@ from dash import Dash, dcc, html, Input, Output
 import pandas as pd
 import numpy as np
 import json
-from tqdm import tqdm
 import plotly.graph_objects as go
 import dash
 import dash_core_components as dcc
