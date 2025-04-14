@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from scipy.stats import zscore
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 
