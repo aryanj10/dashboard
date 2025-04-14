@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 from dash.dash_table.Format import Format, Group, Scheme
 import dash_table
 import dash_bootstrap_components as dbc
-from common_util import convert_to_weekly, plot_stacked_bar,plot_comparison_by_period_from_cache, preprocess_comparison_data, percentage_plot
+from utils.common_util import convert_to_weekly, plot_stacked_bar,plot_comparison_by_period_from_cache, preprocess_comparison_data, percentage_plot
 
 
 

@@ -304,12 +304,14 @@ def percentage_plot(df,line_item,title):
 
 
 def tables_page(df, component):
+    try:
+        df = df[[component, 'Net Revenue']].dropna()
+        df = df[df['Net Revenue'] > 0]
+        df['% of Revenue'] = ((df[component] / df['Net Revenue']) * 100).round(2)
+        df = df.sort_values(by=component, ascending=False).head(5).reset_index().rename(columns={'index': 'Store'})
 
-    df = df[[component, 'Net Revenue']].dropna()
-    df = df[df['Net Revenue'] > 0]
-    df['% of Revenue'] = ((df[component] / df['Net Revenue']) * 100).round(2)
-    df = df.sort_values(by=component, ascending=False).head(5).reset_index().rename(columns={'index': 'Store'})
+        columns = [{'name': col, 'id': col} for col in df.columns]
 
-    columns = [{'name': col, 'id': col} for col in df.columns]
-
-    return df.to_dict('records'), columns
+        return df.to_dict('records'), columns
+    except KeyError:
+        return None,None
