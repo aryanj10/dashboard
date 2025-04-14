@@ -125,14 +125,11 @@ register_general_callbacks(app, all_store_data, all_store_data_region)
 from callbacks.summary_callbacks import register_summary_callbacks
 register_summary_callbacks(app, all_store_data, all_store_data_region)
 
-from callbacks.revenue_callbacks import register_revenue_callbacks
-register_revenue_callbacks(app, all_store_data, all_store_data_region)
+from callbacks.page_callbacks import register_page_callbacks
 
-from callbacks.cost_callbacks import register_cost_callbacks
-register_cost_callbacks(app, all_store_data, all_store_data_region)
+for page_type in ['revenue', 'cost', 'control']:
+    register_page_callbacks(app, all_store_data, all_store_data_region, page_type)
 
-from callbacks.control_callbacks import register_control_callbacks
-register_control_callbacks(app, all_store_data, all_store_data_region)
 
 app.clientside_callback(
     """

@@ -13,9 +13,10 @@ from components.revenue_page import important_metrics
 from components.style_comp import SIDEBAR_STYLE, SIDEBAR_HIDDEN_STYLE, CONTENT_STYLE, CONTENT_EXPANDED_STYLE
 
 
-def register_cost_callbacks(app, all_store_data, all_store_data_region):
+
+def register_page_callbacks(app, all_store_data, all_store_data_region,graph):
     @app.callback(
-        Output('cost-graphs-container', 'children'),
+        Output(f'{graph}-graphs-container', 'children'),
         [
             Input('period-dropdown', 'value'),
             Input('region-dropdown', 'value'),
@@ -23,7 +24,7 @@ def register_cost_callbacks(app, all_store_data, all_store_data_region):
             Input('store-dropdown', 'value')
         ]
     )
-    def update_cost_graphs(period, region, area_coach, store):
+    def update_period_graphs(period, region, area_coach, store):
         if not period:
             raise PreventUpdate
 
@@ -45,20 +46,20 @@ def register_cost_callbacks(app, all_store_data, all_store_data_region):
         single_cache = preprocess_comparison_data(totals)
         weekly_cache = preprocess_comparison_data(convert_to_weekly(totals))
 
-        return important_metrics(df, single_cache, weekly_cache, 'cost')
+        return important_metrics(df, single_cache, weekly_cache, graph)
     
     @app.callback(
-        Output('top5-cost-table', 'data'),
-        Output('top5-cost-table', 'columns'),
+        Output(f'top5-{graph}-table', 'data'),
+        Output(f'top5-{graph}-table', 'columns'),
         [
-            Input('cost-component-dropdown', 'value'),
+            Input(f'{graph}-component-dropdown', 'value'),
             Input('period-dropdown', 'value'),
             Input('region-dropdown', 'value'),
             Input('area-coach-dropdown', 'value'),
             Input('store-dropdown', 'value')
         ]
     )
-    def update_top5_cost_table(component, period, region, area_coach, store):
+    def update_top5_graph_table(component, period, region, area_coach, store):
         if not component or not period:
             raise PreventUpdate
 
@@ -81,5 +82,3 @@ def register_cost_callbacks(app, all_store_data, all_store_data_region):
         
 
         return tables_page(df, component)
-
-
