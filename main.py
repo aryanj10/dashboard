@@ -131,6 +131,9 @@ for page_type in ['revenue', 'cost', 'control']:
     register_page_callbacks(app, all_store_data, all_store_data_region, page_type)
 
 
+from callbacks.rag_callbacks import register_rag_callbacks
+register_rag_callbacks(app)
+
 app.clientside_callback(
     """
     function(n_clicks) {

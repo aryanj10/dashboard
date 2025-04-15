@@ -71,6 +71,19 @@ def register_general_callbacks(app, all_store_data, all_store_data_region):
                 html.Div(id='current-selections'),
                 html.Div(id='control-graphs-container')  # ⬅️ where we'll render the period graphs
             ])
+        elif pathname == "/askAI":
+            return html.Div([
+                html.Hr(),
+                html.H4("💬 Ask the Dashboard Anything"),
+                dcc.Textarea(
+                id="user-question",
+                placeholder="Ask about Net Revenue, EBITDA, Utilities, Area Coaches, etc.",
+                style={"width": "100%", "height": "100px"}
+                ),
+                html.Button("Submit", id="submit-query", n_clicks=0),
+                html.Div(id="rag-answer-output", style={"marginTop": "20px"})
+                ])  
+        
         else:
             return html.H1("404 - Page not found", style={"textAlign": "center"})
 
