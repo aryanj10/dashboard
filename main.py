@@ -92,6 +92,7 @@ app.layout = html.Div([
         dcc.Link("Revenue", href="/revenue-graphs", style={"display": "block", "margin-bottom": "10px"}),
         dcc.Link("Cost of Sales", href="/cost-graphs", style={"display": "block", "margin-bottom": "10px"}),
         dcc.Link("Controllable Store Level Payroll", href="/control-graphs", style={"display": "block", "margin-bottom": "10px"}),
+        dcc.Link("Ask AI", href="/askAI", style={"display": "block", "margin-bottom": "10px"}),
         html.Hr(),
 
         html.H5("Filters"),
